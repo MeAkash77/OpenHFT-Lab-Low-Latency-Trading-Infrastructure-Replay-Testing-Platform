@@ -1,4 +1,4 @@
-# OpenHFT-Lab: High-Frequency Trading Laboratory
+# OpenHFT-Lab-Low-Latency-Trading-Infrastructure-Replay-Testing-Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
@@ -299,7 +299,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📚 [Documentation](docs/)
 - 🐛 [Issue Tracker](https://github.com/your-org/OpenHFT-Lab/issues)
 - 💬 [Discussions](https://github.com/your-org/OpenHFT-Lab/discussions)
-- 📧 Email: support@openhft-lab.com
+- 📧 Email: iakshu845@gmail.com
 
 ---
 
