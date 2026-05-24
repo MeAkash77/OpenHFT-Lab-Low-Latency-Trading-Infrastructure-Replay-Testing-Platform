@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>OpenHFT X | AI-Powered High Frequency Trading Infrastructure</title>
+  <!-- Tailwind + Fonts + Libraries -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; scroll-behavior: smooth; }
+    body {
+      background: #020617;
+      overflow-x: hidden;
+      font-family: 'Inter', sans-serif;
+      color: white;
+    }
+    .grid-bg {
+      background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 42px 42px;
+    }
+    .glass {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .glass-panel {
+      background: rgba(12, 18, 34, 0.55);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(0, 255, 255, 0.2);
+      border-radius: 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .glow { box-shadow: 0 0 35px rgba(34, 211, 238, 0.25); }
+    .hero-gradient {
+      background: radial-gradient(circle at top left, rgba(6,182,212,0.22), transparent 35%),
+                  radial-gradient(circle at bottom right, rgba(99,102,241,0.22), transparent 35%);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    }
+    .card-hover:hover {
+      transform: translateY(-8px);
+      border-color: rgba(34,211,238,0.45);
+      box-shadow: 0 20px 35px -12px rgba(0,255,255,0.3);
+    }
+    .ticker {
+      white-space: nowrap;
+      animation: ticker 24s linear infinite;
+    }
+    @keyframes ticker {
+      from { transform: translateX(100%); }
+      to { transform: translateX(-100%); }
+    }
+    .pulse-dot {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.4); }
+      100% { opacity: 0.4; transform: scale(1); }
+    }
+    .terminal-line {
+      font-family: 'Fira Code', monospace;
+      border-left: 3px solid cyan;
+      background: #0a0e1a;
+    }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: cyan; border-radius: 10px; }
+    .blink-cursor { animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+    .scroll-fade {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.9s cubic-bezier(0.2, 0.9, 0.4, 1.1), transform 0.9s ease;
+    }
+    .scroll-fade.visible { opacity: 1; transform: translateY(0); }
+    .bg-animated-gradient {
+      background: linear-gradient(125deg, #020617 0%, #0a0f2a 50%, #03050f 100%);
+      background-size: 200% 200%;
+      animation: gradientShift 12s ease infinite;
+    }
+    @keyframes gradientShift { 0%{background-position:0% 50%;} 50%{background-position:100% 50%;} 100%{background-position:0% 50%;} }
+    .sidebar-item {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .sidebar-item:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-left: 3px solid cyan;
+      padding-left: 1rem;
+    }
+    .feature-modal-content {
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .packet-animation {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: cyan;
+      border-radius: 2px;
+      filter: blur(1px);
+      opacity: 0.8;
+      animation: flyPacket 1s linear forwards;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    @keyframes flyPacket {
+      0% { transform: translate(0, 0); opacity: 1; }
+      100% { transform: translate(300px, -80px); opacity: 0; }
+    }
+    .neon-glow {
+      text-shadow: 0 0 5px cyan, 0 0 10px cyan;
+    }
+    /* Terminal Overlay Styles */
+    .terminal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.3s, opacity 0.3s;
+    }
+    .terminal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .terminal-backdrop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(12px);
+      z-index: 1;
+    }
+    .terminal-window {
+      position: absolute;
+      top: 2%;
+      left: 2%;
+      width: 96%;
+      height: 92%;
+      background: rgba(5, 10, 25, 0.98);
+      border: 1px solid rgba(0, 255, 255, 0.5);
+      border-radius: 24px;
+      box-shadow: 0 0 60px rgba(0, 255, 255, 0.3);
+      backdrop-filter: blur(4px);
+      z-index: 2;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-family: 'Fira Code', monospace;
+      transform: scale(0.95);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1), opacity 0.4s ease;
+    }
+    .terminal-overlay.active .terminal-window {
+      transform: scale(1);
+      opacity: 1;
+    }
+    .terminal-header {
+      background: rgba(0, 0, 0, 0.8);
+      border-bottom: 1px solid rgba(0, 255, 255, 0.4);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: move;
+    }
+    .terminal-controls { display: flex; gap: 12px; }
+    .terminal-control { width: 14px; height: 14px; border-radius: 50%; transition: 0.2s; cursor: pointer; }
+    .terminal-control.close { background: #ff5f56; }
+    .terminal-control.minimize { background: #ffbd2e; }
+    .terminal-control.maximize { background: #27c93f; }
+    .terminal-title { color: #0ff; font-size: 0.85rem; letter-spacing: 1px; font-weight: 600; }
+    .terminal-stats { display: flex; gap: 20px; font-size: 0.7rem; color: #8ec8ff; }
+    .terminal-body { flex: 1; display: flex; overflow: hidden; background: #03050f; }
+    .terminal-sidebar { width: 260px; background: rgba(0, 0, 0, 0.6); border-right: 1px solid rgba(0, 255, 255, 0.3); padding: 16px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; }
+    .metric-card { background: rgba(0, 30, 60, 0.7); border-left: 3px solid cyan; padding: 10px 12px; border-radius: 10px; font-size: 0.7rem; }
+    .metric-value { font-size: 1.3rem; font-weight: bold; color: cyan; }
+    .terminal-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .terminal-tabs { display: flex; background: #0a0e1a; border-bottom: 1px solid #1e2a3e; padding: 0 16px; gap: 20px; }
+    .tab { padding: 8px 0; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; font-size: 0.8rem; }
+    .tab.active { color: cyan; border-bottom-color: cyan; }
+    .terminal-output { flex: 1; overflow-y: auto; padding: 16px; font-family: 'Fira Code', monospace; font-size: 0.8rem; background: rgba(3, 5, 15, 0.95); }
+    .terminal-input-line { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #050a15; border-top: 1px solid #1e293b; }
+    .prompt { color: #0ff; font-weight: bold; }
+    .input-field { background: transparent; border: none; color: #b0f0ff; font-family: 'Fira Code', monospace; font-size: 0.85rem; flex: 1; outline: none; }
+    .scanline { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,255,0,0.04) 0px, rgba(0,255,0,0.04) 2px, transparent 2px, transparent 6px); pointer-events: none; z-index: 10; }
+    .matrix-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; opacity: 0.12; }
+    /* Technology Page Styles */
+    .tech-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #010314;
+      z-index: 2000;
+      overflow-y: auto;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.4s ease, opacity 0.4s ease;
+    }
+    .tech-page.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .tech-card {
+      background: rgba(10, 20, 35, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 255, 255, 0.25);
+      transition: all 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+    .tech-card:hover {
+      border-color: rgba(0, 255, 255, 0.8);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 25px 40px -15px rgba(0, 255, 255, 0.4);
+    }
+    .close-tech {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      z-index: 2001;
+      background: rgba(0,0,0,0.8);
+      border: 1px solid cyan;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1.5rem;
+      color: cyan;
+    }
+    .close-tech:hover {
+      background: cyan;
+      color: black;
+      transform: rotate(90deg) scale(1.1);
+    }
+    .pulse-ring {
+      animation: pulseRing 2s infinite;
+    }
+    @keyframes pulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.4); }
+      70% { box-shadow: 0 0 0 15px rgba(0, 255, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); }
+    }
+  </style>
+</head>
+<body class="grid-bg">
+
+  <canvas id="particleCanvas" class="fixed top-0 left-0 w-full h-full pointer-events-none z-0"></canvas>
+
+  <div class="relative z-10" id="mainContent">
+    <!-- NAVBAR - Login REMOVED, Technology ADDED -->
+    <header class="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center">
+            <span class="text-cyan-400 font-black text-xl">H</span>
+          </div>
+          <div>
+            <h1 class="text-2xl font-black tracking-tight">Open<span class="text-cyan-400">HFT</span> X</h1>
+            <p class="text-xs text-slate-400">AI Quant Infrastructure</p>
+          </div>
+        </div>
+        <nav class="hidden lg:flex items-center gap-8 text-sm text-slate-300 font-medium">
+          <a href="#features" class="hover:text-cyan-400 transition">Features</a>
+          <a href="#analytics" class="hover:text-cyan-400 transition">Analytics</a>
+          <a href="#strategies" class="hover:text-cyan-400 transition">Strategies</a>
+          <a href="#ai" class="hover:text-cyan-400 transition">AI Engine</a>
+          <a href="#pricing" class="hover:text-cyan-400 transition">Pricing</a>
+          <a href="#" id="techNavBtn" class="hover:text-cyan-400 transition text-cyan-400 font-semibold">Technology</a>
+        </nav>
+        <div class="flex items-center gap-4">
+          <button id="launchTerminalBtn" class="bg-cyan-500 hover:bg-cyan-400 transition px-5 py-2 rounded-xl text-slate-950 font-bold glow">Launch Terminal</button>
+          <button id="notifyBtn" class="relative hover:text-cyan-300 transition ml-2"><i class="fa-regular fa-bell text-xl"></i><span class="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full"></span></button>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section id="hero" class="relative overflow-hidden hero-gradient">
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-950"></div>
+      <div class="max-w-7xl mx-auto px-6 py-28 relative z-10">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <div class="inline-flex items-center gap-3 bg-slate-900/80 border border-cyan-500/20 px-5 py-3 rounded-full mb-7">
+              <div class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></div>
+              <span class="text-sm text-cyan-300 font-medium">Real-Time Quantitative Trading Infrastructure</span>
+            </div>
+            <h2 class="text-5xl md:text-7xl font-black leading-tight mb-8">Build Ultra-Low <span class="text-cyan-400">Latency AI</span> Trading Systems</h2>
+            <p class="text-slate-300 text-lg leading-relaxed max-w-2xl mb-10">OpenHFT X is a next-generation high-frequency trading ecosystem with distributed matching engines, AI-driven strategy orchestration, institutional-grade observability, market replay simulations, and sub-millisecond execution infrastructure.</p>
+            <div class="flex flex-wrap gap-4 mb-10">
+              <button id="heroBacktestBtn" class="bg-cyan-500 hover:bg-cyan-400 transition text-slate-950 font-bold px-7 py-4 rounded-2xl glow">Start Backtesting</button>
+              <button class="border border-slate-700 hover:border-cyan-400 hover:text-cyan-300 transition px-7 py-4 rounded-2xl font-semibold">Explore Documentation</button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div><h3 class="text-3xl font-black text-cyan-400">0.38ms</h3><p class="text-slate-400 text-sm mt-1">Execution Latency</p></div>
+              <div><h3 class="text-3xl font-black text-emerald-400">18M+</h3><p class="text-slate-400 text-sm mt-1">Events / Sec</p></div>
+              <div><h3 class="text-3xl font-black text-yellow-400">99.99%</h3><p class="text-slate-400 text-sm mt-1">Availability</p></div>
+              <div><h3 class="text-3xl font-black text-pink-400">AI</h3><p class="text-slate-400 text-sm mt-1">Adaptive Models</p></div>
+            </div>
+          </div>
+          <div><div class="glass rounded-[32px] overflow-hidden glow border border-cyan-500/20"><div class="bg-black border-b border-slate-800 px-5 py-4 flex items-center justify-between"><div class="flex gap-2"><div class="w-3 h-3 rounded-full bg-red-500"></div><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div></div><div class="text-sm text-slate-400">openhft-terminal.live</div></div><div class="p-6 space-y-5"><div class="bg-slate-950 rounded-2xl p-5 border border-slate-800"><div class="flex justify-between mb-4"><h4 class="font-bold">Portfolio Overview</h4><span class="text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg text-sm font-semibold">+22.84%</span></div><div class="grid grid-cols-2 gap-4"><div class="bg-slate-900 rounded-xl p-4"><p class="text-slate-400 text-sm">Net Value</p><h3 class="text-2xl font-black">$24.8M</h3></div><div class="bg-slate-900 rounded-xl p-4"><p class="text-slate-400 text-sm">Daily PnL</p><h3 class="text-2xl font-black text-emerald-400">+$418K</h3></div></div></div><div class="bg-slate-950 rounded-2xl p-5 border border-slate-800"><div class="flex justify-between mb-3 text-sm"><span>Market Throughput</span><span class="text-cyan-400">18.2M msgs/sec</span></div><div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden"><div class="bg-cyan-400 h-3 rounded-full w-[94%]"></div></div></div><div class="bg-slate-950 rounded-2xl p-5 border border-slate-800"><div class="flex justify-between mb-3 text-sm"><span>AI Confidence Score</span><span class="text-emerald-400">92%</span></div><div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden"><div class="bg-emerald-400 h-3 rounded-full w-[92%]"></div></div></div><div class="rounded-2xl bg-black border border-slate-800 p-4 overflow-hidden"><div class="ticker text-cyan-400 font-medium text-sm">BTC/USD ▲ 4.2% &nbsp;&nbsp; ETH/USD ▲ 2.1% &nbsp;&nbsp; NASDAQ ▲ 0.9% &nbsp;&nbsp; SOL/USD ▲ 5.4% &nbsp;&nbsp; EUR/USD ▼ 0.2% &nbsp;&nbsp; AAPL ▲ 1.4%</div></div></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="py-28">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="text-center mb-20 scroll-fade">
+          <p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">CORE CAPABILITIES</p>
+          <h3 class="text-5xl font-black mb-6">Institutional Grade Trading Stack</h3>
+          <p class="text-slate-400 text-lg max-w-3xl mx-auto">Everything needed to design, simulate, deploy, monitor, and optimize high-frequency trading strategies.</p>
+        </div>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8" id="featuresGrid">
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="ultra-low-latency"><div class="text-5xl mb-6">⚡</div><h4 class="text-2xl font-bold mb-4">Ultra Low Latency</h4><p class="text-slate-400">Sub-millisecond execution engine with lock-free queues, RDMA, and memory-optimized pipelines.</p></div>
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="ai-trading-agents"><div class="text-5xl mb-6">🤖</div><h4 class="text-2xl font-bold mb-4">AI Trading Agents</h4><p class="text-slate-400">Autonomous multi-agent RL framework, LSTM/Transformer models, sentiment analysis.</p></div>
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="market-replay"><div class="text-5xl mb-6">📊</div><h4 class="text-2xl font-bold mb-4">Market Replay Engine</h4><p class="text-slate-400">Tick-perfect order book replay with time-travel controls & candlestick reconstruction.</p></div>
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="distributed-infra"><div class="text-5xl mb-6">☁️</div><h4 class="text-2xl font-bold mb-4">Distributed Infrastructure</h4><p class="text-slate-400">Kubernetes-native HFT stack, multi-region, Kafka streaming, service mesh.</p></div>
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="risk-management"><div class="text-5xl mb-6">🛡️</div><h4 class="text-2xl font-bold mb-4">Risk Management</h4><p class="text-slate-400">VaR engine, drawdown tracker, stress testing, dynamic hedging simulator.</p></div>
+          <div class="glass rounded-3xl p-8 card-hover cursor-pointer scroll-fade" data-feature="real-time-telemetry"><div class="text-5xl mb-6">📡</div><h4 class="text-2xl font-bold mb-4">Real-Time Telemetry</h4><p class="text-slate-400">Prometheus/Grafana dashboards, distributed tracing, AI anomaly detection.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Additional preserved sections -->
+    <section id="analytics" class="py-28 bg-slate-950/70 border-y border-slate-800"><div class="max-w-7xl mx-auto px-6"><div class="grid lg:grid-cols-2 gap-16 items-center"><div><p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">ADVANCED ANALYTICS</p><h3 class="text-5xl font-black mb-8 leading-tight">Real-Time Quantitative Intelligence</h3><div class="space-y-6"><div class="glass rounded-2xl p-6"><div class="flex items-start gap-5"><div class="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center text-2xl">📈</div><div><h4 class="text-xl font-bold mb-2">Predictive Signal Processing</h4><p class="text-slate-400">Analyze millions of streaming market events using predictive statistical models.</p></div></div></div><div class="glass rounded-2xl p-6"><div class="flex items-start gap-5"><div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center text-2xl">🧠</div><div><h4 class="text-xl font-bold mb-2">AI Decision Engine</h4><p class="text-slate-400">Autonomous execution systems dynamically adapt to market volatility in real time.</p></div></div></div></div></div><div class="glass rounded-[32px] p-8 glow"><div class="grid grid-cols-2 gap-5"><div class="bg-slate-900 rounded-2xl p-6 border border-slate-800"><h3 class="text-4xl font-black text-cyan-400">250+</h3><p class="text-slate-400">Trading Pairs</p></div><div class="bg-slate-900 rounded-2xl p-6 border border-slate-800"><h3 class="text-4xl font-black text-emerald-400">42</h3><p class="text-slate-400">AI Models</p></div></div></div></div></div></section>
+    <section id="strategies" class="py-28"><div class="max-w-7xl mx-auto px-6"><div class="text-center mb-20"><p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">STRATEGY LAB</p><h3 class="text-5xl font-black mb-6">AI-Powered Trading Strategies</h3></div><div class="grid lg:grid-cols-3 gap-8"><div class="glass rounded-3xl p-8 border border-cyan-500/10 hover:border-cyan-400/40 transition"><div class="text-5xl mb-6">📉</div><h4 class="text-2xl font-bold mb-4">Statistical Arbitrage</h4><p class="text-slate-400 mb-6">Discover market inefficiencies through pair trading and correlation breakdown analysis.</p><button class="text-cyan-400 font-semibold">Run Simulation →</button></div><div class="glass rounded-3xl p-8 border border-emerald-500/10 hover:border-emerald-400/40 transition"><div class="text-5xl mb-6">🤖</div><h4 class="text-2xl font-bold mb-4">Reinforcement Learning</h4><p class="text-slate-400 mb-6">Self-learning trading agents optimize reward functions using market feedback loops.</p><button class="text-emerald-400 font-semibold">Run Simulation →</button></div><div class="glass rounded-3xl p-8 border border-yellow-500/10 hover:border-yellow-400/40 transition"><div class="text-5xl mb-6">⚡</div><h4 class="text-2xl font-bold mb-4">Market Making Engine</h4><p class="text-slate-400 mb-6">Dynamic spread balancing and liquidity provisioning with volatility-aware execution.</p><button class="text-yellow-400 font-semibold">Run Simulation →</button></div></div></div></section>
+    <section id="ai" class="py-28 bg-slate-950/60 border-y border-slate-800"><div class="max-w-7xl mx-auto px-6 text-center"><p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">AI QUANT ENGINE</p><h3 class="text-5xl font-black mb-8">Autonomous Decision Intelligence</h3><div class="grid md:grid-cols-4 gap-6"><div class="glass rounded-3xl p-8"><h4 class="text-4xl font-black text-cyan-400 mb-3">NLP</h4><p class="text-slate-400">News & Sentiment Analysis</p></div><div class="glass rounded-3xl p-8"><h4 class="text-4xl font-black text-emerald-400 mb-3">RL</h4><p class="text-slate-400">Adaptive RL Agents</p></div><div class="glass rounded-3xl p-8"><h4 class="text-4xl font-black text-yellow-400 mb-3">CNN</h4><p class="text-slate-400">Pattern Recognition</p></div><div class="glass rounded-3xl p-8"><h4 class="text-4xl font-black text-pink-400 mb-3">LSTM</h4><p class="text-slate-400">Time-Series Forecasting</p></div></div></div></section>
+    <section id="pricing" class="py-28"><div class="max-w-7xl mx-auto px-6"><div class="text-center mb-20"><p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">PRICING</p><h3 class="text-5xl font-black mb-6">Flexible Plans for Quant Teams</h3></div><div class="grid lg:grid-cols-3 gap-8"><div class="glass rounded-3xl p-10 border border-slate-800"><h4 class="text-2xl font-bold mb-4">Starter</h4><h3 class="text-5xl font-black mb-6">Free</h3><button class="w-full border border-slate-700 hover:border-cyan-400 transition py-4 rounded-2xl font-semibold">Get Started</button></div><div class="glass rounded-3xl p-10 border border-cyan-400 glow scale-[1.02]"><div class="inline-flex px-4 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/20 text-cyan-300 text-sm mb-6">Most Popular</div><h4 class="text-2xl font-bold mb-4">Professional</h4><h3 class="text-5xl font-black mb-6">$99</h3><button class="w-full bg-cyan-500 hover:bg-cyan-400 transition text-slate-950 font-bold py-4 rounded-2xl">Upgrade Now</button></div><div class="glass rounded-3xl p-10 border border-slate-800"><h4 class="text-2xl font-bold mb-4">Enterprise</h4><h3 class="text-5xl font-black mb-6">Custom</h3><button class="w-full border border-slate-700 hover:border-cyan-400 transition py-4 rounded-2xl font-semibold">Contact Sales</button></div></div></div></section>
+    <section class="py-28"><div class="max-w-5xl mx-auto px-6"><div class="glass rounded-[40px] p-14 text-center relative overflow-hidden glow border border-cyan-500/20"><div class="relative z-10"><p class="text-cyan-400 uppercase tracking-[0.3em] text-sm font-bold mb-4">BUILD THE FUTURE OF TRADING</p><h3 class="text-6xl font-black mb-8 leading-tight">Ready to Deploy <span class="text-cyan-400">Next-Gen</span> Quant Systems?</h3><div class="flex flex-wrap justify-center gap-5"><button class="bg-cyan-500 hover:bg-cyan-400 transition text-slate-950 font-bold px-8 py-4 rounded-2xl glow">Launch Terminal</button><button class="border border-slate-700 hover:border-cyan-400 hover:text-cyan-300 transition px-8 py-4 rounded-2xl font-semibold">Docs</button></div></div></div></div></section>
+  </div>
+
+  <!-- FEATURE MODAL -->
+  <div id="featureModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/90 backdrop-blur-xl">
+    <div class="min-h-screen p-6 md:p-10">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex justify-end mb-4"><button id="closeModalBtn" class="text-4xl text-slate-400 hover:text-white">&times;</button></div>
+        <div id="featureDetailContent" class="glass-panel p-8 rounded-3xl feature-modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastMsg" class="fixed bottom-6 right-6 glass p-3 px-5 rounded-full hidden z-50"></div>
+  <footer class="border-t border-slate-800 py-10 text-center text-slate-500 text-sm">© 2026 OpenHFT X — AI-Powered High Frequency Trading Infrastructure.</footer>
+
+  <!-- TERMINAL OVERLAY -->
+  <div id="terminalOverlay" class="terminal-overlay">
+    <div class="terminal-backdrop"></div>
+    <div class="terminal-window" id="terminalWindow">
+      <div class="terminal-header" id="terminalHeader">
+        <div class="terminal-controls"><div class="terminal-control close" id="termClose"></div><div class="terminal-control minimize" id="termMinimize"></div><div class="terminal-control maximize" id="termMaximize"></div></div>
+        <div class="terminal-title">OpenHFT X :: QUANTUM TERMINAL [v2.4.7]</div>
+        <div class="terminal-stats"><span id="termLatency">0.38ms</span> | <span id="termAgents">4 AI agents</span> | <span id="termClock"></span></div>
+      </div>
+      <div class="terminal-body">
+        <div class="terminal-sidebar">
+          <div class="metric-card"><div>⚡ GPU Utilization</div><div class="metric-value" id="gpuUtil">78%</div><div class="w-full bg-slate-700 h-1 mt-1"><div class="bg-cyan-400 h-1 rounded-full" style="width:78%"></div></div></div>
+          <div class="metric-card"><div>🌐 Network Throughput</div><div class="metric-value" id="netThroughput">2.4 Gb/s</div></div>
+          <div class="metric-card"><div>🧠 AI Confidence</div><div class="metric-value" id="aiConfSide">92%</div></div>
+          <div class="metric-card"><div>📈 Active Strategies</div><div class="metric-value">7</div></div>
+          <div class="metric-card"><div>📊 Order Book Depth</div><div class="metric-value" id="orderDepth">$12.4M</div></div>
+        </div>
+        <div class="terminal-main">
+          <div class="terminal-tabs" id="termTabs"><div class="tab active" data-tab="main">main</div><div class="tab" data-tab="quant">quant</div><div class="tab" data-tab="ai">ai-core</div></div>
+          <div class="terminal-output" id="terminalOutput"><div class="text-cyan-400">> OpenHFT X Boot Sequence v2.4.7</div><div id="bootLogs"></div></div>
+          <div class="terminal-input-line"><span class="prompt">quant@openhft:~$</span><input type="text" id="termInput" class="input-field" autofocus><span class="blink-cursor">_</span></div>
+        </div>
+      </div>
+      <canvas id="matrixCanvas" class="matrix-canvas"></canvas>
+      <div class="scanline"></div>
+    </div>
+  </div>
+
+  <!-- TECHNOLOGY STACK PAGE - SEPARATE FULLSCREEN PAGE -->
+  <div id="techPage" class="tech-page">
+    <div class="close-tech" id="closeTechBtn"><i class="fas fa-times"></i></div>
+    <div class="max-w-7xl mx-auto px-6 py-12">
+      <div class="text-center mb-20 pt-10">
+        <div class="inline-flex items-center gap-2 bg-cyan-500/15 border border-cyan-400/40 px-5 py-2 rounded-full mb-6 pulse-ring">
+          <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+          <span class="text-cyan-400 text-sm font-mono tracking-wider">OPENHFT INFRASTRUCTURE STACK v2.4.7</span>
+        </div>
+        <h1 class="text-7xl md:text-9xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 bg-clip-text text-transparent mb-6">Technology<br>Stack</h1>
+        <p class="text-slate-300 text-xl max-w-3xl mx-auto">Institutional-grade high-frequency trading infrastructure powering sub-millisecond execution, AI-driven strategies, and real-time market intelligence.</p>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-6 mt-16">
+          <div class="glass p-5 rounded-2xl text-center hover:scale-105 transition"><div class="text-4xl font-black text-cyan-400">1M+</div><div class="text-slate-400 text-sm">Events/sec</div></div>
+          <div class="glass p-5 rounded-2xl text-center hover:scale-105 transition"><div class="text-4xl font-black text-emerald-400">0.38ms</div><div class="text-slate-400 text-sm">Latency</div></div>
+          <div class="glass p-5 rounded-2xl text-center hover:scale-105 transition"><div class="text-4xl font-black text-purple-400">128</div><div class="text-slate-400 text-sm">Cores</div></div>
+          <div class="glass p-5 rounded-2xl text-center hover:scale-105 transition"><div class="text-4xl font-black text-yellow-400">24/7</div><div class="text-slate-400 text-sm">Uptime</div></div>
+          <div class="glass p-5 rounded-2xl text-center hover:scale-105 transition"><div class="text-4xl font-black text-pink-400">99.999%</div><div class="text-slate-400 text-sm">Reliability</div></div>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+        <div class="tech-card"><i class="fa-brands fa-microsoft text-cyan-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">C# / .NET 8</h3><p class="text-slate-400">Native AOT, hardware intrinsics, Span&lt;T&gt; zero-copy, tiered compilation, high-performance memory management</p><div class="mt-3 text-xs text-cyan-400">Performance: 18M ops/sec</div></div>
+        <div class="tech-card"><i class="fa-solid fa-microchip text-cyan-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Lock-Free Architecture</h3><p class="text-slate-400">Ring buffers, LMAX Disruptor pattern, NUMA-aware processing, CPU cache optimization, memory barriers</p><div class="mt-3 text-xs text-cyan-400">Latency: &lt;1 microsecond</div></div>
+        <div class="tech-card"><i class="fa-brands fa-binance text-yellow-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Exchange Connectivity</h3><p class="text-slate-400">Binance, Bybit, OKX WebSocket feeds, real-time L2/L3 order books, tick-level data streams</p><div class="mt-3 text-xs text-cyan-400">5ms to tick reception</div></div>
+        <div class="tech-card"><i class="fa-solid fa-brain text-purple-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">AI Trading Agents</h3><p class="text-slate-400">Reinforcement Learning (PPO/DQN), LSTM time-series, Transformer models, Market Making algorithms</p><div class="mt-3 text-xs text-cyan-400">94% prediction accuracy</div></div>
+        <div class="tech-card"><i class="fa-brands fa-kubernetes text-cyan-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">K8s & Kafka</h3><p class="text-slate-400">Container orchestration, event streaming, service mesh (Istio), auto-scaling, multi-region deployment</p><div class="mt-3 text-xs text-cyan-400">142K msg/s throughput</div></div>
+        <div class="tech-card"><i class="fa-solid fa-chart-line text-green-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Observability</h3><p class="text-slate-400">Grafana dashboards, Prometheus metrics, OpenTelemetry tracing, AI anomaly detection, real-time alerts</p><div class="mt-3 text-xs text-cyan-400">Real-time dashboards</div></div>
+        <div class="tech-card"><i class="fa-solid fa-database text-red-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Redis & Caching</h3><p class="text-slate-400">In-memory data store, pub/sub messaging, order book caching, market data persistence</p><div class="mt-3 text-xs text-cyan-400">&lt;0.21ms latency</div></div>
+        <div class="tech-card"><i class="fa-solid fa-chart-simple text-orange-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Real-Time Analytics</h3><p class="text-slate-400">Tick data processing, statistical arbitrage calculations, real-time risk metrics, VaR computation</p><div class="mt-3 text-xs text-cyan-400">18M events/sec</div></div>
+        <div class="tech-card"><i class="fa-solid fa-shield-haltered text-emerald-400 text-5xl mb-4 block"></i><h3 class="text-2xl font-bold mb-2">Risk Management</h3><p class="text-slate-400">VaR engine, drawdown tracking, stress testing, dynamic hedging, auto-liquidation protection</p><div class="mt-3 text-xs text-cyan-400">Real-time monitoring</div></div>
+      </div>
+
+      <div class="glass rounded-3xl p-10 text-center">
+        <h3 class="text-3xl font-bold mb-6 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">End-to-End Pipeline Architecture</h3>
+        <div class="flex flex-wrap justify-center items-center gap-3 text-sm">
+          <span class="px-4 py-2 bg-cyan-500/20 rounded-full border border-cyan-400/30">📡 Market Feed</span>
+          <i class="fas fa-arrow-right text-cyan-400"></i>
+          <span class="px-4 py-2 bg-purple-500/20 rounded-full border border-purple-400/30">⚙️ Data Pipeline</span>
+          <i class="fas fa-arrow-right text-cyan-400"></i>
+          <span class="px-4 py-2 bg-pink-500/20 rounded-full border border-pink-400/30">🧠 AI Layer</span>
+          <i class="fas fa-arrow-right text-cyan-400"></i>
+          <span class="px-4 py-2 bg-emerald-500/20 rounded-full border border-emerald-400/30">⚡ Trading Engine</span>
+          <i class="fas fa-arrow-right text-cyan-400"></i>
+          <span class="px-4 py-2 bg-yellow-500/20 rounded-full border border-yellow-400/30">🛡️ Risk Layer</span>
+          <i class="fas fa-arrow-right text-cyan-400"></i>
+          <span class="px-4 py-2 bg-red-500/20 rounded-full border border-red-400/30">🌐 Gateway</span>
+        </div>
+        <div class="mt-8 pt-6 border-t border-slate-700 flex justify-center gap-8 text-sm">
+          <div><span class="text-cyan-400 font-bold">0.38ms</span> End-to-End</div>
+          <div><span class="text-emerald-400 font-bold">18M</span> Events/sec</div>
+          <div><span class="text-yellow-400 font-bold">99.999%</span> Uptime</div>
+        </div>
+        <div class="mt-6 text-slate-400 text-xs">Powered by C# .NET 8 • Lock-Free Algorithms • Kubernetes • Kafka • AI/ML • Real-Time Telemetry</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Particles
+    const canvas = document.getElementById('particleCanvas'); let ctx = canvas.getContext('2d'); let particles = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+    for(let i=0;i<80;i++) particles.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, r:Math.random()*2+1, a:Math.random()*0.5, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2});
+    function animateParticles() { if(!ctx) return; ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0) p.x=canvas.width; if(p.x>canvas.width) p.x=0; if(p.y<0) p.y=canvas.height; if(p.y>canvas.height) p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`rgba(0, 255, 255, ${p.a})`; ctx.fill(); }); requestAnimationFrame(animateParticles); }
+    animateParticles();
+    function showToast(msg) { let t = document.getElementById('toastMsg'); t.innerHTML = `<i class="fa-regular fa-bell mr-2"></i> ${msg}`; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),2500); }
+    document.getElementById('notifyBtn')?.addEventListener('click',()=>showToast('AI Alert: High volatility detected'));
+    document.getElementById('heroBacktestBtn')?.addEventListener('click',()=>showToast('Backtesting environment loading...'));
+
+    // Technology Page Toggle
+    const techPage = document.getElementById('techPage');
+    const techNavBtn = document.getElementById('techNavBtn');
+    const closeTechBtn = document.getElementById('closeTechBtn');
+    techNavBtn.addEventListener('click', (e) => { e.preventDefault(); techPage.classList.add('active'); document.body.style.overflow = 'hidden'; });
+    closeTechBtn.addEventListener('click', () => { techPage.classList.remove('active'); document.body.style.overflow = 'auto'; });
+
+    // Feature Modals - ORIGINAL FULL FEATURE MODALS
+    const featureModals = {
+      'ultra-low-latency': () => `
+        <h2 class="text-3xl font-black text-cyan-400 flex items-center gap-3">⚡ Ultra Low Latency Engine</h2><p class="text-slate-300 mt-4">Sub-millisecond execution engine with RDMA, lock-free queues, kernel bypass.</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"><div class="bg-slate-900 p-4 rounded-xl"><span class="text-slate-400">Live Latency</span><div class="text-2xl font-mono text-cyan-400" id="liveLatency">0.38 ms</div></div><div class="bg-slate-900 p-4 rounded-xl"><span>Throughput</span><div class="text-2xl font-mono text-emerald-400" id="liveThroughput">18.2M</div></div><div class="bg-slate-900 p-4 rounded-xl"><span>CPU Core 0</span><div class="h-2 bg-slate-700 rounded-full mt-2"><div id="cpuBar" class="h-2 bg-cyan-400 rounded-full w-[62%]"></div></div></div><div class="bg-slate-900 p-4 rounded-xl"><span>Queue Depth</span><input type="range" id="queueSlider" min="0" max="100" value="34" class="w-full mt-2"></div></div>
+        <div class="mt-6 glass p-5 rounded-2xl"><canvas id="execChart" height="100"></canvas></div>
+        <div class="flex flex-wrap gap-3 mt-6"><button id="executeOrderBtn" class="bg-cyan-600 px-6 py-2 rounded-xl">🚀 Execute Order</button><button id="simulateBurstBtn" class="border border-cyan-400 px-5 py-2 rounded-xl">📡 Simulate Market Burst</button><select id="speedMode" class="bg-slate-800 rounded-lg p-2"><option>Normal</option><option>Turbo</option></select></div>
+        <div id="orderResult" class="mt-4 text-xs font-mono text-cyan-300"></div>
+      `,
+      'ai-trading-agents': () => `<h2 class="text-3xl font-black text-cyan-400">🤖 AI Trading Agents</h2><p>Autonomous RL agents + LSTM/Transformer models. Live candlestick & sentiment analysis.</p><div class="grid md:grid-cols-2 gap-6 mt-6"><div><canvas id="aiChart" height="200"></canvas><div class="mt-3 text-center"><span class="text-cyan-400">AI Confidence: </span><span id="confidenceVal">87%</span><div class="w-full bg-slate-700 rounded-full h-2 mt-1"><div id="confidenceFill" class="bg-cyan-400 h-2 rounded-full w-[87%]"></div></div></div></div><div><div class="bg-slate-800 p-4 rounded-xl"><h4 class="font-bold">Models</h4><div class="flex gap-2 flex-wrap"><span class="bg-cyan-500/20 px-2 py-1 rounded">LSTM</span><span class="bg-emerald-500/20 px-2 py-1 rounded">Transformer</span><span class="bg-yellow-500/20 px-2 py-1 rounded">Reinforcement Learning</span><span class="bg-purple-500/20 px-2 py-1 rounded">Market Making AI</span></div><button id="trainModelBtn" class="mt-4 bg-cyan-600 px-4 py-2 rounded w-full">🧠 Train Model</button><button id="changeMarketBtn" class="mt-2 border px-4 py-2 rounded w-full">🐂 Simulate Bull Market</button></div></div></div><div id="aiPredictionMsg" class="mt-4 text-emerald-400 font-mono"></div>`,
+      'market-replay': () => `<h2 class="text-3xl font-black text-cyan-400">📊 Market Replay Engine</h2><p>Historical order book replay with time-travel, speed slider, flash crash simulation.</p><div class="flex gap-4 items-center mt-4"><button id="replayPause" class="bg-slate-700 px-4 py-2 rounded">⏸️ Pause</button><button id="replayPlay" class="bg-cyan-600 px-4 py-2 rounded">▶️ Resume</button><button id="replayFF" class="bg-slate-700 px-4 py-2 rounded">⏩ Fast Forward</button><input type="range" id="replaySpeed" min="0.5" max="10" step="0.5" value="1"><span id="speedLabel">1x</span></div><canvas id="replayChart" height="200" class="mt-4"></canvas><div class="grid grid-cols-4 gap-2 mt-4"><button id="flashCrashBtn" class="bg-red-800/60 p-2 rounded">💥 Flash Crash</button><button id="bullRunBtn" class="bg-green-800/60 p-2 rounded">🐂 Bull Market</button><button id="cryptoPumpBtn" class="bg-yellow-800/60 p-2 rounded">🚀 Crypto Pump</button></div><div id="replayStatus" class="text-slate-400 mt-3"></div>`,
+      'distributed-infra': () => `<h2 class="text-3xl font-black text-cyan-400">☁️ Distributed Infrastructure</h2><p>Kubernetes, multi-region Kafka, Istio service mesh. Globally distributed HFT stack.</p><div class="flex gap-4 flex-wrap mt-4"><div class="bg-slate-800 p-3 rounded-xl"><i class="fab fa-kubernetes"></i> K8s Nodes: <span id="k8sNodes">12</span> <button id="addNodeBtn" class="ml-2 bg-cyan-700 px-2 rounded">+Add</button></div><div><button id="simulateFailover" class="bg-orange-700 px-4 py-2 rounded">⚠️ Trigger Failover</button><button id="loadSpike" class="bg-purple-700 px-4 py-2 rounded ml-2">📈 Load Spike</button></div></div><div class="mt-4 grid grid-cols-3 gap-3"><div>Kafka throughput: <span id="kafkaTh">142K</span> msg/s</div><div>Redis latency: 0.21ms</div><div>gRPC active streams: 89</div></div><canvas id="infraChart" height="150" class="mt-4"></canvas>`,
+      'risk-management': () => `<h2 class="text-3xl font-black text-cyan-400">🛡️ Risk Management System</h2><p>VaR engine, dynamic hedging, stress testing, auto-liquidation demo.</p><div class="grid grid-cols-2 gap-4 mt-4"><div class="bg-slate-900 p-4 rounded-xl"><div>Portfolio VaR (95%): <span id="varValue">2.4%</span></div><div>Drawdown: <span id="drawdownVal">-4.2%</span></div><input type="range" id="exposureSlider" min="0" max="200" value="100"><button id="simulateCrashBtn" class="bg-red-700 mt-3 px-4 py-2 rounded w-full">📉 Simulate Market Crash</button></div><div><canvas id="riskHeatmap" height="150"></canvas></div></div><button id="stressTestBtn" class="bg-cyan-700 mt-3 px-5 py-2 rounded">🧪 Run Stress Test</button><div id="riskAlert" class="mt-3 text-red-400"></div>`,
+      'real-time-telemetry': () => `<h2 class="text-3xl font-black text-cyan-400">📡 Real-Time Telemetry</h2><p>Prometheus/Grafana panels, distributed tracing, AI anomaly detection.</p><div class="grid grid-cols-2 gap-4 mt-4"><div><div>CPU: <span id="teleCpu">34%</span> <div class="bg-slate-700 h-2 rounded-full"><div class="bg-cyan-400 h-2 rounded-full w-[34%]"></div></div></div><div>Memory: 2.1/8GB</div><div>API Latency: <span id="apiLatencyTele">12ms</span></div><button id="triggerIncident" class="bg-red-600 mt-3 px-4 py-2 rounded">⚠️ Trigger Incident</button></div><div><canvas id="telemetryChart" height="150"></canvas></div></div><div id="logViewer" class="mt-4 bg-black/70 p-3 rounded-xl font-mono text-xs h-28 overflow-y-auto">[INFO] System nominal. AI anomaly score 0.02</div>`
+    };
+
+    let activeCharts = {};
+    let replayInterval = null; let replayData = []; let replayIndex = 0;
+    let teleInterval = null;
+
+    function renderModal(featureId) {
+      const renderFn = featureModals[featureId];
+      if(!renderFn) return "<div>Feature not found</div>";
+      const html = renderFn();
+      document.getElementById('featureDetailContent').innerHTML = html;
+      setTimeout(() => {
+        if(featureId === 'ultra-low-latency') {
+          let latencyChart = new Chart(document.getElementById('execChart'), { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ label: 'µs Latency', data: Array(20).fill(0.38), borderColor: '#06b6d4' }] } });
+          activeCharts.latency = latencyChart;
+          document.getElementById('executeOrderBtn').onclick = () => { let newLat = (Math.random()*0.2+0.25).toFixed(2); document.getElementById('liveLatency').innerText = newLat+' ms'; document.getElementById('orderResult').innerHTML = `✅ Order executed @ ${newLat}ms | ${Date.now()}`; let newData = latencyChart.data.datasets[0].data.slice(1); newData.push(parseFloat(newLat)); latencyChart.data.datasets[0].data = newData; latencyChart.update(); };
+          document.getElementById('simulateBurstBtn').onclick = () => { for(let i=0;i<30;i++){ let d=document.createElement('div'); d.className='packet-animation'; d.style.left=Math.random()*400+'px'; document.body.appendChild(d); setTimeout(()=>d.remove(),1000); } showToast('Market burst simulated, 30 packets'); };
+          document.getElementById('queueSlider').oninput = (e) => { document.getElementById('cpuBar').style.width = e.target.value+'%'; };
+        }
+        if(featureId === 'ai-trading-agents') {
+          let aiCtx = document.getElementById('aiChart').getContext('2d'); new Chart(aiCtx, { type: 'line', data: { labels: Array(30).fill(''), datasets: [{ label: 'Price Prediction', data: Array.from({length:30},()=>Math.random()*100+50), borderColor: '#facc15' }] } });
+          document.getElementById('trainModelBtn').onclick = () => { let conf = Math.floor(Math.random()*20+70); document.getElementById('confidenceVal').innerText = conf+'%'; document.getElementById('confidenceFill').style.width = conf+'%'; document.getElementById('aiPredictionMsg').innerHTML = `🧠 Model trained. New accuracy: ${conf}%`; };
+          document.getElementById('changeMarketBtn').onclick = () => showToast('Simulating Bull Market: AI suggests long positions');
+        }
+        if(featureId === 'market-replay') {
+          replayData = Array.from({length:100}, (_,i)=> 100 + 20*Math.sin(i/10) + (Math.random()*5)); replayIndex = 0;
+          let replayChart = new Chart(document.getElementById('replayChart'), { type: 'line', data: { labels: Array(100).fill(''), datasets: [{ label: 'Reconstructed Price', data: replayData, borderColor: '#06b6d4' }] } });
+          activeCharts.replay = replayChart;
+          let speed = 1; let interval; function startReplay(){ if(interval) clearInterval(interval); interval = setInterval(()=>{ if(replayIndex < replayData.length-1){ replayIndex++; replayChart.data.datasets[0].data = replayData.slice(0,replayIndex+1); replayChart.update(); document.getElementById('replayStatus').innerHTML = `Tick: ${replayIndex} | Price: ${replayData[replayIndex].toFixed(2)}`; } }, 50/speed); }
+          startReplay(); 
+          document.getElementById('replayPlay').onclick = () => startReplay(); document.getElementById('replayPause').onclick = () => clearInterval(interval); document.getElementById('replayFF').onclick = () => { speed=5; startReplay(); };
+          document.getElementById('replaySpeed').oninput = (e)=>{ speed=parseFloat(e.target.value); document.getElementById('speedLabel').innerText = speed+'x'; startReplay(); };
+          document.getElementById('flashCrashBtn').onclick = ()=>{ replayData = replayData.map((v,i)=> i>70 ? v*0.6 : v); replayChart.data.datasets[0].data = replayData; replayChart.update(); showToast('Flash Crash Simulation Active'); };
+          document.getElementById('bullRunBtn').onclick = ()=>{ replayData = replayData.map(v=>v*1.3); replayChart.update(); };
+        }
+        if(featureId === 'distributed-infra') {
+          new Chart(document.getElementById('infraChart'), { type: 'bar', data: { labels: ['US-East','EU-West','AP-South'], datasets: [{ label: 'Latency (ms)', data: [12, 34, 78], backgroundColor: '#06b6d4' }] } });
+          document.getElementById('addNodeBtn').onclick = ()=>{ let n=parseInt(document.getElementById('k8sNodes').innerText)+1; document.getElementById('k8sNodes').innerText=n; showToast(`K8s node added, total ${n}`); };
+          document.getElementById('simulateFailover').onclick = ()=>showToast('Failover triggered: traffic shifted to EU region');
+          document.getElementById('loadSpike').onclick = ()=> { let kafkaSpan = document.getElementById('kafkaTh'); kafkaSpan.innerText = (parseInt(kafkaSpan.innerText)+50000)+' msg/s'; };
+        }
+        if(featureId === 'risk-management') {
+          new Chart(document.getElementById('riskHeatmap'), { type: 'line', data: { labels: ['Equity','FX','Crypto'], datasets: [{ label: 'Exposure', data: [40,30,30], backgroundColor: '#ef4444' }] } });
+          document.getElementById('simulateCrashBtn').onclick = ()=>{ document.getElementById('drawdownVal').innerText = '-18.7%'; document.getElementById('riskAlert').innerHTML = '⚠️ STOP LOSS TRIGGERED - Hedging activated'; showToast('Portfolio protection engaged'); };
+          document.getElementById('stressTestBtn').onclick = ()=>{ document.getElementById('varValue').innerText = '5.1%'; showToast('Stress test passed with VaR 5.1%'); };
+        }
+        if(featureId === 'real-time-telemetry') {
+          let telemetryChart = new Chart(document.getElementById('telemetryChart'), { type: 'line', data: { labels: Array(20).fill(''), datasets: [{ label: 'Requests/sec', data: Array(20).fill(450), borderColor: '#f97316' }] } });
+          if(teleInterval) clearInterval(teleInterval);
+          teleInterval = setInterval(()=>{ let newVal = Math.random()*800+200; let logs = document.getElementById('logViewer'); logs.innerHTML = `<div>[INFO] ${new Date().toLocaleTimeString()} RPS: ${newVal.toFixed(0)}</div>` + logs.innerHTML.slice(0,500); let newData = telemetryChart.data.datasets[0].data.slice(1); newData.push(newVal); telemetryChart.data.datasets[0].data = newData; telemetryChart.update(); document.getElementById('teleCpu').innerText = Math.floor(Math.random()*60+20)+'%'; document.getElementById('apiLatencyTele').innerText = (Math.random()*20+5).toFixed(1)+'ms'; }, 1200);
+          document.getElementById('triggerIncident').onclick = ()=>{ showToast('❌ Alert: High error rate detected, tracing initiated'); document.getElementById('logViewer').innerHTML = '<div class="text-red-400">[CRITICAL] Anomaly spike 450%</div>'; };
+        }
+      }, 50);
+    }
+
+    const modal = document.getElementById('featureModal'), closeBtn = document.getElementById('closeModalBtn');
+    window.openFeature = (id) => { if(teleInterval) clearInterval(teleInterval); renderModal(id); modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; };
+    closeBtn.onclick = () => { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; if(replayInterval) clearInterval(replayInterval); if(teleInterval) clearInterval(teleInterval); };
+    window.onclick = (e) => { if(e.target === modal) { modal.classList.add('hidden'); document.body.style.overflow = 'auto'; } };
+    document.querySelectorAll('[data-feature]').forEach(el => el.addEventListener('click', () => openFeature(el.getAttribute('data-feature'))));
+    document.querySelectorAll('#featuresGrid .glass').forEach(card => { const map = {'Ultra Low Latency':'ultra-low-latency','AI Trading Agents':'ai-trading-agents','Market Replay Engine':'market-replay','Distributed Infrastructure':'distributed-infra','Risk Management':'risk-management','Real-Time Telemetry':'real-time-telemetry'}; const h4 = card.querySelector('h4'); if(h4 && map[h4.innerText]) card.setAttribute('data-feature', map[h4.innerText]); card.onclick = () => openFeature(card.getAttribute('data-feature')); });
+
+    // Terminal System
+    const terminalOverlay = document.getElementById('terminalOverlay');
+    const termInput = document.getElementById('termInput');
+    const termOutputDiv = document.getElementById('terminalOutput');
+    const bootLogsDiv = document.getElementById('bootLogs');
+    let bootCompleted = false;
+    let matrixCtx, matrixCanvas;
+    let matrixInterval, clockInterval;
+
+    const bootMessages = ["> Initializing OpenHFT Kernel... [OK]", "> Loading AI Trading Engine... [OK]", "> Starting Quantum Execution Layer... [OK]", "> Connecting Exchange Gateways (NASDAQ, NYSE, Binance)... [OK]", "> Loading Kubernetes Clusters... 12 nodes active [OK]", "> Starting Kafka Streams... throughput 142K msg/s [OK]", "> Initializing Neural Agents (LSTM, RL, Transformer)... [OK]", "> Running Risk Validation... VaR threshold 2.4% [OK]", "> Starting Telemetry Services... Prometheus streaming [OK]", "> System Ready. Type 'help' for commands."];
+    async function runBootSequence() { bootLogsDiv.innerHTML = ''; for(let msg of bootMessages) { await new Promise(r => setTimeout(r, 150)); const line = document.createElement('div'); line.className = 'text-green-400 font-mono text-sm'; line.innerText = msg; bootLogsDiv.appendChild(line); bootLogsDiv.scrollTop = bootLogsDiv.scrollHeight; } bootCompleted = true; }
+    function appendTerminalOutput(text, color='cyan') { const line = document.createElement('div'); line.className = `text-${color}-400 font-mono text-sm mt-1`; line.innerText = text; termOutputDiv.appendChild(line); termOutputDiv.scrollTop = termOutputDiv.scrollHeight; }
+    function processCommand(cmd) { const c = cmd.trim().toLowerCase(); if(!bootCompleted && c !== 'exit') { appendTerminalOutput("System booting... please wait.", "yellow"); return; } if(c === 'exit') { closeTerminal(); return; } if(c === 'clear') { termOutputDiv.innerHTML = '<div class="text-cyan-400">> OpenHFT X Terminal</div><div id="bootLogs"></div>'; return; } if(c === 'help') { appendTerminalOutput("Available: clear, version, uptime, ai-status, portfolio, pnl, execute-order, latency-test, kubectl status, cluster-status, train-model, telemetry, matrix, exit", "green"); return; } if(c === 'version') { appendTerminalOutput("OpenHFT X Terminal v2.4.7 (Quantum Build)", "purple"); return; } if(c === 'uptime') { appendTerminalOutput("System Uptime: 14d 8h 22m", "cyan"); return; } if(c === 'ai-status') { appendTerminalOutput("🤖 AI Agents: 4 active (LSTM: 89% acc, RL: 94% confidence)", "cyan"); return; } if(c === 'portfolio') { appendTerminalOutput("PORTFOLIO: $24.8M | Daily PnL: +$418K | Sharpe: 2.4", "emerald"); return; } if(c === 'pnl') { appendTerminalOutput("Today's PnL: +$123,450 (+0.54%)", "emerald"); return; } if(c === 'execute-order') { appendTerminalOutput("🚀 BUY 100 BTC @ $63,420.12 | Order ID: 0x7f3a2b1c | Latency: 0.21ms", "cyan"); return; } if(c === 'latency-test') { appendTerminalOutput(`Latency to exchange: ${(Math.random()*0.3+0.18).toFixed(2)}ms`, "cyan"); return; } if(c === 'kubectl status') { appendTerminalOutput("K8s: 12 nodes | 45 pods | Healthy", "cyan"); return; } if(c === 'cluster-status') { appendTerminalOutput("Cluster: US-EAST(active), EU-WEST(active), AP-SOUTH(standby)", "yellow"); return; } if(c === 'train-model') { appendTerminalOutput("🧠 Training RL agent... new accuracy: 93.2%", "cyan"); return; } if(c === 'telemetry') { appendTerminalOutput("📡 Metrics: CPU 32% | MEM 2.1/8GB | RPS 2.3k | Errors: 0.01%", "cyan"); return; } if(c === 'matrix') { startMatrixRain(); appendTerminalOutput("Matrix mode activated.", "green"); return; } appendTerminalOutput(`Command '${cmd}' not recognized. Type 'help'.`, "red"); }
+    
+    termInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') { const cmd = termInput.value; appendTerminalOutput(`quant@openhft:~$ ${cmd}`, "white"); processCommand(cmd); termInput.value = ''; } });
+    
+    function startMatrixRain() { if(matrixInterval) clearInterval(matrixInterval); matrixCanvas = document.getElementById('matrixCanvas'); matrixCtx = matrixCanvas.getContext('2d'); matrixCanvas.width = terminalOverlay.offsetWidth; matrixCanvas.height = terminalOverlay.offsetHeight; const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"; const fontSize = 14; const columns = matrixCanvas.width / fontSize; const drops = Array(Math.floor(columns)).fill(1); matrixInterval = setInterval(() => { matrixCtx.fillStyle = "rgba(0, 0, 0, 0.05)"; matrixCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height); matrixCtx.fillStyle = "#0f0"; matrixCtx.font = `${fontSize}px monospace`; for(let i = 0; i < drops.length; i++) { const text = chars.charAt(Math.floor(Math.random() * chars.length)); matrixCtx.fillText(text, i * fontSize, drops[i] * fontSize); if(drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) drops[i] = 0; drops[i]++; } }, 50); }
+    
+    function updateSidebarMetrics() { setInterval(() => { document.getElementById('gpuUtil').innerHTML = Math.floor(Math.random() * 40 + 60)+'%'; document.getElementById('netThroughput').innerHTML = (Math.random() * 3 + 1.8).toFixed(1)+' Gb/s'; document.getElementById('aiConfSide').innerHTML = Math.floor(Math.random() * 15 + 85)+'%'; document.getElementById('orderDepth').innerHTML = '$'+(Math.random() * 5 + 10).toFixed(1)+'M'; }, 2800); }
+    function updateClock() { const now = new Date(); document.getElementById('termClock').innerText = now.toLocaleTimeString(); }
+    function openTerminal() { gsap.to('#mainContent', { duration: 0.4, filter: "blur(6px)", scale: 0.98 }); terminalOverlay.classList.add('active'); termInput.focus(); runBootSequence(); updateSidebarMetrics(); clockInterval = setInterval(updateClock, 1000); startMatrixRain(); }
+    function closeTerminal() { gsap.to('#mainContent', { duration: 0.4, filter: "blur(0px)", scale: 1 }); terminalOverlay.classList.remove('active'); if(matrixInterval) clearInterval(matrixInterval); if(clockInterval) clearInterval(clockInterval); }
+    document.getElementById('launchTerminalBtn').addEventListener('click', openTerminal);
+    document.getElementById('termClose').addEventListener('click', closeTerminal);
+    document.getElementById('termMinimize').addEventListener('click', () => { gsap.to('#terminalWindow', { duration: 0.2, scale: 0, opacity: 0, onComplete: () => { terminalOverlay.classList.remove('active'); gsap.set('#terminalWindow', { scale: 1, opacity: 1 }); } }); setTimeout(() => { if(terminalOverlay.classList.contains('active')) closeTerminal(); }, 300); });
+    let isMax = false; document.getElementById('termMaximize').addEventListener('click', () => { const win = document.getElementById('terminalWindow'); if(!isMax){ win.style.width='100%'; win.style.height='100%'; win.style.top='0'; win.style.left='0'; win.style.borderRadius='0'; isMax=true; } else { win.style.width='96%'; win.style.height='92%'; win.style.top='2%'; win.style.left='2%'; win.style.borderRadius='24px'; isMax=false; } });
+    let drag = false, offsetX, offsetY; const header = document.getElementById('terminalHeader'); const win = document.getElementById('terminalWindow'); header.addEventListener('mousedown', (e) => { if(isMax) return; drag=true; offsetX = e.clientX - win.offsetLeft; offsetY = e.clientY - win.offsetTop; }); window.addEventListener('mousemove', (e) => { if(drag) { win.style.left = (e.clientX - offsetX) + 'px'; win.style.top = (e.clientY - offsetY) + 'px'; win.style.transform = 'none'; } }); window.addEventListener('mouseup', () => drag=false);
+    
+    const observer = new IntersectionObserver((e)=>e.forEach(entry=>entry.isIntersecting&&entry.target.classList.add('visible')),{threshold:0.15});
+    document.querySelectorAll('.scroll-fade').forEach(el=>observer.observe(el));
+  </script>
+</body>
+</html>
